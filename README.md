@@ -30,6 +30,12 @@
 - **InMemory Repository**: 线程安全的内存仓储实现
 - **依赖注入**: 分层 DI 配置
 - **Swagger 集成**: 自动 API 文档
+- **Serilog 日志系统**: 结构化日志，支持控制台和文件输出
+- **HTTP 请求日志**: 自动记录所有 HTTP 请求和响应时间
+
+#### 5. 完整示例
+- **TodoItem**: 简单聚合示例（Minimal API）
+- **User**: 完整聚合示例（Controller + 值对象 + 完整的领域事件）
 
 ## 🏗️ 项目结构
 
@@ -103,15 +109,33 @@ dotnet run --project src/DddTemplate.Api/DddTemplate.Api.csproj
 
 ### API 端点
 
+#### TodoItem API (Minimal API 风格)
 ```
-GET    /api/todos           # 获取所有待办事项
-GET    /api/todos/{id}      # 获取单个待办事项
-POST   /api/todos           # 创建待办事项
-PUT    /api/todos/{id}/complete    # 标记为完成
-PUT    /api/todos/{id}/rename      # 重命名
+GET    /api/todos                    # 获取所有待办事项
+GET    /api/todos/{id}               # 获取单个待办事项
+POST   /api/todos                    # 创建待办事项
+PUT    /api/todos/{id}/complete      # 标记为完成
+PUT    /api/todos/{id}/rename        # 重命名
+```
+
+#### User API (Controller 风格 - 完整示例)
+```
+GET    /api/users                    # 获取所有用户
+GET    /api/users?activeOnly=true    # 获取活跃用户
+GET    /api/users/{id}               # 根据ID获取用户
+GET    /api/users/by-email/{email}   # 根据邮箱获取用户
+POST   /api/users                    # 创建新用户
+PUT    /api/users/{id}               # 更新用户
+POST   /api/users/{id}/activate      # 激活用户
+POST   /api/users/{id}/deactivate    # 停用用户
+DELETE /api/users/{id}               # 删除用户
 ```
 
 ## 📖 使用示例
+
+### TodoItem 示例（简单）
+
+TodoItem 是一个简单的聚合示例，展示基本的 DDD 模式：
 
 ### 1. 创建聚合根
 
@@ -164,7 +188,7 @@ if (string.IsNullOrEmpty(title))
 
 ### 4. 统一 API 响应
 
-```csharp
+```json
 // 成功响应
 {
   "success": true,
@@ -184,6 +208,83 @@ if (string.IsNullOrEmpty(title))
   },
   "timestamp": "2025-12-08T07:20:00Z"
 }
+```
+
+### User 示例（完整）
+
+User 是一个完整的聚合示例，展示所有 DDD 模式：
+
+#### 1. 值对象（Email）
+
+```csharp
+public sealed class Email : ValueObject
+{
+    public string Value { get; }
+
+    public static Result<Email> Create(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Result.Failure<Email>(Error.Validation("Email.Empty", "Email cannot be empty"));
+
+        if (!EmailRegex.IsMatch(email))
+            return Result.Failure<Email>(Error.Validation("Email.InvalidFormat", "Email format is invalid"));
+
+        return Result.Success(new Email(email.ToLowerInvariant()));
+    }
+}
+```
+
+#### 2. 聚合根（User）
+
+```csharp
+public sealed class User : AggregateRoot<Guid>
+{
+    public Email Email { get; private set; }
+    public string FullName { get; private set; }
+    public bool IsActive { get; private set; }
+
+    public static Result<User> Create(string email, string fullName)
+    {
+        var emailResult = Email.Create(email);
+        if (emailResult.IsFailure)
+            return Result.Failure<User>(emailResult.Error);
+
+        var user = new User(Guid.NewGuid(), emailResult.Value, fullName);
+        user.AddDomainEvent(new UserCreatedEvent(user.Id, user.Email.Value, user.FullName));
+
+        return Result.Success(user);
+    }
+
+    public Result Deactivate(string reason)
+    {
+        if (!IsActive)
+            return Result.Failure(Error.Conflict("User.AlreadyDeactivated", "User is already deactivated"));
+
+        IsActive = false;
+        AddDomainEvent(new UserDeactivatedEvent(Id, reason));
+
+        return Result.Success();
+    }
+}
+```
+
+#### 3. API 使用示例
+
+```bash
+# 创建用户
+curl -X POST http://localhost:5002/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "fullName": "John Doe"}'
+
+# 更新用户
+curl -X PUT http://localhost:5002/api/users/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"email": "newemail@example.com", "fullName": "John Smith"}'
+
+# 停用用户
+curl -X POST http://localhost:5002/api/users/{id}/deactivate \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "User requested account closure"}'
 ```
 
 ## 🎓 核心概念
@@ -260,13 +361,42 @@ Result 模式提供了一种优雅的错误处理方式，避免了异常的性�
 
 详细实施步骤请参考 [PHASE2_IMPLEMENTATION_PLAN.md](./PHASE2_IMPLEMENTATION_PLAN.md)。
 
+## 📝 日志系统
+
+项目集成了 **Serilog** 结构化日志系统：
+
+### 日志特性
+- ✅ **结构化日志** - 使用占位符而非字符串拼接
+- ✅ **多输出目标** - 控制台 + 文件
+- ✅ **日志级别** - Debug、Information、Warning、Error、Fatal
+- ✅ **日志丰富器** - 自动添加机器名、进程ID、线程ID等
+- ✅ **HTTP 请求日志** - 自动记录所有 HTTP 请求和响应时间
+- ✅ **日志滚动** - 按天滚动，自动清理旧日志
+
+### 日志示例
+
+```csharp
+// 结构化日志记录
+_logger.LogInformation("Creating user with email: {Email}", request.Email);
+_logger.LogWarning("User {UserId} not found", id);
+_logger.LogError(ex, "Failed to process request for user {UserId}", id);
+
+// HTTP 请求日志（自动记录）
+// [15:30:45 INF] HTTP GET /api/users responded 200 in 45.2341 ms
+```
+
+### 日志文件位置
+- **开发环境**: `logs/dev-log-20251210.txt`
+- **生产环境**: `logs/log-20251210.txt`
+
 ## 🛠️ 技术栈
 
 - **.NET 9.0**: 最新的 .NET 平台
 - **C# 13**: 最新的 C# 语言特性
 - **ASP.NET Core**: Web API 框架
-- **Minimal API**: 简洁的 API 定义方式
+- **Minimal API + Controllers**: 两种 API 风格示例
 - **Swagger/OpenAPI**: API 文档
+- **Serilog**: 结构化日志系统
 - **MediatR**: 中介者模式实现（已添加）
 
 ## 📝 设计原则

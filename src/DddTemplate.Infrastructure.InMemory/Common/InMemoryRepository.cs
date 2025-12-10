@@ -11,6 +11,7 @@ namespace DddTemplate.Infrastructure.InMemory.Common;
 
 public class InMemoryRepository<TEntity, TId> : IRepository<TEntity, TId>
     where TEntity : Entity<TId>
+    where TId : notnull
 {
     protected readonly ConcurrentDictionary<TId, TEntity> Store = new();
 

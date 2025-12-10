@@ -13,7 +13,10 @@ public sealed class TodoItem : AggregateRoot<Guid>
     public bool IsCompleted { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    private TodoItem() { } // for serialization
+    private TodoItem() : base(Guid.Empty)
+    {
+        Title = string.Empty; // for serialization
+    }
 
     private TodoItem(Guid id, string title)
         : base(id)
