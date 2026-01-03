@@ -22,7 +22,8 @@
       "Bash(taskkill:*)",
       "Bash(powershell -Command \"Get-Process -Name dotnet -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, Path\")",
       "Bash(powershell -Command \"Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force\")",
-      "Bash(powershell -Command \"Get-Process -Name dotnet -ErrorAction SilentlyContinue | Select-Object Id, ProcessName\")"
+      "Bash(powershell -Command \"Get-Process -Name dotnet -ErrorAction SilentlyContinue | Select-Object Id, ProcessName\")",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

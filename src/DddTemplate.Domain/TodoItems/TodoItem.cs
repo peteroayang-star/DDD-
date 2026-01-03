@@ -10,6 +10,7 @@ namespace DddTemplate.Domain.TodoItems;
 public sealed class TodoItem : AggregateRoot<Guid>
 {
     public string Title { get; private set; }
+    public string? Description { get; private set; }
     public bool IsCompleted { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
@@ -71,6 +72,15 @@ public sealed class TodoItem : AggregateRoot<Guid>
 
         // 触发领域事件
         AddDomainEvent(new TodoItemRenamedEvent(Id, oldTitle, Title));
+    }
+
+    /// <summary>
+    /// 更新描述
+    /// </summary>
+    /// <param name="description">新描述</param>
+    public void UpdateDescription(string? description)
+    {
+        Description = description?.Trim();
     }
 }
 

@@ -39,6 +39,17 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    // 添加 CORS 支持
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAdmin", policy =>
+        {
+            policy.WithOrigins("http://localhost:5000", "https://localhost:5001")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
+
     var app = builder.Build();
 
     // 3. 配置中间件管道
@@ -62,6 +73,9 @@ try
     app.UseSwaggerUI();
 
     app.UseHttpsRedirection();
+
+    // 启用 CORS
+    app.UseCors("AllowAdmin");
 
     // 4. 配置 API 端点（直接调用 Application Service）
 

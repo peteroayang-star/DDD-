@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - DDD 管理后台</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+            background: #f0f2f5;
+        }
+        .admin-container { display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 侧边栏样式 */
+        .sidebar { width: 200px; background: #304156; transition: width 0.3s; overflow: hidden; }
+        .sidebar.collapsed { width: 64px; }
+        .sidebar .el-menu { border: none; background: #304156; }
+        .sidebar .logo { 
+            height: 60px; display: flex; align-items: center; justify-content: center; 
+            color: white; font-size: 18px; font-weight: bold; background: #2b3a4a; 
+        }
+        .sidebar.collapsed .logo-text { display: none; }
+        
+        /* 主内容区样式 */
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* 顶部导航栏样式 */
+        .navbar { 
+            height: 60px; background: white; box-shadow: 0 1px 4px rgba(0,21,41,.08); 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px; 
+        }
+        .navbar-left { display: flex; align-items: center; }
+        .navbar-right { display: flex; align-items: center; gap: 20px; }
+        .hamburger { cursor: pointer; font-size: 20px; color: #5a5e66; transition: transform 0.3s; }
+        .hamburger:hover { color: #409EFF; }
+        .breadcrumb { margin-left: 20px; }
+        
+        /* 内容区样式 */
+        .app-main { flex: 1; overflow-y: auto; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="admin-container">
+            <!-- 侧边栏 -->
+            <div class="sidebar" :class="{ collapsed: isCollapse }">
+                <div class="logo">
+                    <i class="el-icon-s-grid"></i>
+                    <span class="logo-text" v-show="!isCollapse" style="margin-left: 10px;">DDD 后台</span>
+                </div>
+                
+                <el-menu :default-active="activeMenu" :collapse="isCollapse"
+                         background-color="#304156" text-color="#bfcbd9"
+                         active-text-color="#409EFF" :unique-opened="true">
+                    
+                    <!-- 仪表盘 -->
+                    <el-menu-item index="dashboard" @@click="navigate('/Dashboard')">
+                        <i class="el-icon-s-home"></i>
+                        <span slot="title">仪表盘</span>
+                    </el-menu-item>
+                    
+                    <!-- 内容管理 -->
+                    <el-submenu index="content">
+                        <template slot="title">
+                            <i class="el-icon-document"></i>
+                            <span>内容管理</span>
+                        </template>
+                        <el-menu-item index="todoitem" @@click="navigate('/TodoItem')">
+                            <i class="el-icon-tickets"></i>
+                            <span>待办事项</span>
+                        </el-menu-item>
+                    </el-submenu>
+                    
+                    <!-- 用户管理 -->
+                    <el-submenu index="user">
+                        <template slot="title">
+                            <i class="el-icon-user"></i>
+                            <span>用户管理</span>
+                        </template>
+                        <el-menu-item index="userlist">
+                            <i class="el-icon-user-solid"></i>
+                            <span>用户列表</span>
+                        </el-menu-item>
+                        <el-menu-item index="role">
+                            <i class="el-icon-s-custom"></i>
+                            <span>角色管理</span>
+                        </el-menu-item>
+                    </el-submenu>
+                    
+                    <!-- 系统管理 -->
+                    <el-submenu index="system">
+                        <template slot="title">
+                            <i class="el-icon-setting"></i>
+                            <span>系统管理</span>
+                        </template>
+                        <el-menu-item index="menu">
+                            <i class="el-icon-menu"></i>
+                            <span>菜单管理</span>
+                        </el-menu-item>
+                        <el-menu-item index="log">
+                            <i class="el-icon-document-copy"></i>
+                            <span>操作日志</span>
+                        </el-menu-item>
+                    </el-submenu>
+                    
+                </el-menu>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div class="main-container">
+                <!-- 顶部导航栏 -->
+                <div class="navbar">
+                    <div class="navbar-left">
+                        <div class="hamburger" @@click="toggleSidebar">
+                            <i :class="isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
+                        </div>
+                        <el-breadcrumb separator="/" class="breadcrumb">
+                            <el-breadcrumb-item>@ViewData["Title"]</el-breadcrumb-item>
+                        </el-breadcrumb>
+                    </div>
+                    <div class="navbar-right">
+                        <el-dropdown @@command="handleCommand">
+                            <span style="cursor: pointer; color: #5a5e66;">
+                                <i class="el-icon-user"></i> @Context.Request.Cookies["UserName"]
+                                <i class="el-icon-arrow-down el-icon--right"></i>
+                            </span>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </div>
+                </div>
+                
+                <!-- 内容区域 -->
+                <div class="app-main">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    isCollapse: false,
+                    activeMenu: 'todoitem'
+                };
+            },
+            methods: {
+                toggleSidebar() {
+                    this.isCollapse = !this.isCollapse;
+                },
+                navigate(path) {
+                    window.location.href = path;
+                },
+                handleCommand(command) {
+                    if (command === 'logout') {
+                        this.$confirm('确定要退出登录吗?', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        }).then(() => {
+                            window.location.href = '/Account/Logout';
+                        });
+                    } else if (command === 'profile') {
+                        this.$message('个人中心功能开发中...');
+                    }
+                }
+            },
+            mounted() {
+                const path = window.location.pathname;
+                if (path.includes('TodoItem')) this.activeMenu = 'todoitem';
+                else if (path.includes('Dashboard')) this.activeMenu = 'dashboard';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -93,7 +93,42 @@ public sealed class TodoItemService
         return true;
     }
 
+    public async Task<bool> UpdateAsync(Guid id, UpdateTodoItemRequest request, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Attempting to update todo item {TodoId}", id);
+
+        var entity = await _repository.GetByIdAsync(id, ct);
+        if (entity is null)
+        {
+            _logger.LogWarning("Cannot update todo item {TodoId} - not found", id);
+            return false;
+        }
+
+        entity.Rename(request.Title);
+        entity.UpdateDescription(request.Description);
+
+        _logger.LogInformation("Todo item {TodoId} updated successfully", id);
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Attempting to delete todo item {TodoId}", id);
+
+        var entity = await _repository.GetByIdAsync(id, ct);
+        if (entity is null)
+        {
+            _logger.LogWarning("Cannot delete todo item {TodoId} - not found", id);
+            return false;
+        }
+
+        await _repository.RemoveAsync(entity, ct);
+
+        _logger.LogInformation("Todo item {TodoId} deleted successfully", id);
+        return true;
+    }
+
     private static TodoItemDto ToDto(TodoItem entity) =>
-        new(entity.Id, entity.Title, entity.IsCompleted, entity.CreatedAt);
+        new(entity.Id, entity.Title, entity.Description, entity.IsCompleted, entity.CreatedAt);
 }
 

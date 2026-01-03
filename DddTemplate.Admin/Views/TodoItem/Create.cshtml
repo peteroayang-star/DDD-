@@ -1,0 +1,59 @@
+@model CreateTodoItemRequest
+@{
+    ViewData["Title"] = "新增待办事项";
+}
+
+<div id="createApp">
+    <el-card>
+        <div slot="header">
+            <span style="font-size: 18px; font-weight: bold;">新增待办事项</span>
+        </div>
+
+        <el-form :model="form" label-width="100px">
+            <el-form-item label="标题" required>
+                <el-input v-model="form.title" name="Title" placeholder="请输入标题"></el-input>
+            </el-form-item>
+
+            <el-form-item label="描述">
+                <el-input type="textarea" v-model="form.description" name="Description" 
+                          :rows="4" placeholder="请输入描述"></el-input>
+            </el-form-item>
+
+            <el-form-item>
+                <el-button type="primary" @@click="submitForm">提交</el-button>
+                <el-button @@click="goBack">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-card>
+</div>
+
+<script>
+new Vue({
+    el: '#createApp',
+    data() {
+        return {
+            form: {
+                title: '',
+                description: ''
+            }
+        };
+    },
+    methods: {
+        submitForm() {
+            if (!this.form.title) {
+                this.$message.error('请输入标题');
+                return;
+            }
+            document.querySelector('form').submit();
+        },
+        goBack() {
+            location.href = '@Url.Action("Index")';
+        }
+    }
+});
+</script>
+
+<form method="post" style="display:none;">
+    <input type="hidden" name="Title" :value="form.title" />
+    <input type="hidden" name="Description" :value="form.description" />
+</form>

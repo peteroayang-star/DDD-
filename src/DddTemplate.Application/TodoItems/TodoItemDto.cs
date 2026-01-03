@@ -9,6 +9,7 @@ namespace DddTemplate.Application.TodoItems;
 public sealed record TodoItemDto(
     Guid Id,
     string Title,
+    string? Description,
     bool IsCompleted,
     DateTime CreatedAt
 );
