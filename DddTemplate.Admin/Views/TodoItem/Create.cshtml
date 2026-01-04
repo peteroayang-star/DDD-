@@ -3,29 +3,45 @@
     ViewData["Title"] = "新增待办事项";
 }
 
+<!-- 新增待办事项页面 -->
 <div id="createApp">
     <el-card>
+        <!-- 卡片头部 -->
         <div slot="header">
-            <span style="font-size: 18px; font-weight: bold;">新增待办事项</span>
+            <span style="font-size: 18px; font-weight: bold;">
+                <i class="el-icon-plus"></i> 新增待办事项
+            </span>
         </div>
 
-        <el-form :model="form" label-width="100px">
-            <el-form-item label="标题" required>
-                <el-input v-model="form.title" name="Title" placeholder="请输入标题"></el-input>
+        <!-- 表单：使用 Element UI 的表单验证 -->
+
+        <el-form :model="form" :rules="rules" ref="todoForm" label-width="100px">
+            <el-form-item label="标题" prop="title">
+                <el-input v-model="form.title" placeholder="请输入待办事项标题" maxlength="100" show-word-limit></el-input>
             </el-form-item>
 
-            <el-form-item label="描述">
-                <el-input type="textarea" v-model="form.description" name="Description" 
-                          :rows="4" placeholder="请输入描述"></el-input>
+            <el-form-item label="描述" prop="description">
+                <el-input type="textarea" v-model="form.description"
+                          :rows="5" placeholder="请输入详细描述（可选）"
+                          maxlength="500" show-word-limit></el-input>
             </el-form-item>
 
             <el-form-item>
-                <el-button type="primary" @@click="submitForm">提交</el-button>
-                <el-button @@click="goBack">取消</el-button>
+                <el-button type="primary" @@click="submitForm" :loading="submitting">
+                    <i class="el-icon-check"></i> 提交
+                </el-button>
+                <el-button @@click="goBack">
+                    <i class="el-icon-close"></i> 取消
+                </el-button>
             </el-form-item>
         </el-form>
     </el-card>
 </div>
+
+<form id="hiddenForm" method="post" style="display:none;">
+    <input type="hidden" name="Title" id="titleInput" />
+    <input type="hidden" name="Description" id="descriptionInput" />
+</form>
 
 <script>
 new Vue({
@@ -35,25 +51,39 @@ new Vue({
             form: {
                 title: '',
                 description: ''
+            },
+            submitting: false,
+            rules: {
+                title: [
+                    { required: true, message: '请输入待办事项标题', trigger: 'blur' },
+                    { min: 1, max: 100, message: '标题长度在 1 到 100 个字符', trigger: 'blur' }
+                ]
             }
         };
     },
     methods: {
         submitForm() {
-            if (!this.form.title) {
-                this.$message.error('请输入标题');
-                return;
-            }
-            document.querySelector('form').submit();
+            this.$refs.todoForm.validate((valid) => {
+                if (valid) {
+                    this.submitting = true;
+                    document.getElementById('titleInput').value = this.form.title;
+                    document.getElementById('descriptionInput').value = this.form.description || '';
+                    document.getElementById('hiddenForm').submit();
+                } else {
+                    this.$message.error('请检查表单输入');
+                    return false;
+                }
+            });
         },
         goBack() {
-            location.href = '@Url.Action("Index")';
+            this.$confirm('确定要取消吗? 未保存的数据将丢失', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '继续编辑',
+                type: 'warning'
+            }).then(() => {
+                location.href = '@Url.Action("Index")';
+            }).catch(() => {});
         }
     }
 });
 </script>
-
-<form method="post" style="display:none;">
-    <input type="hidden" name="Title" :value="form.title" />
-    <input type="hidden" name="Description" :value="form.description" />
-</form>

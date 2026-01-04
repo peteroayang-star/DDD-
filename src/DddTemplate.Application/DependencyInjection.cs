@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using DddTemplate.Application.TodoItems;
 using DddTemplate.Application.Users;
+using DddTemplate.Application.OperationLogs;
+using DddTemplate.Application.Menus;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DddTemplate.Application;
@@ -14,9 +16,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        // 注册 HttpContextAccessor
+        services.AddHttpContextAccessor();
+
         // 注册应用服务
         services.AddScoped<TodoItemService>();
         services.AddScoped<UserService>();
+        services.AddScoped<OperationLogService>();
+        services.AddScoped<MenuService>();
 
         return services;
     }

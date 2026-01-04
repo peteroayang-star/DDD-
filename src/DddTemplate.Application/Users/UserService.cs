@@ -1,6 +1,7 @@
 using DddTemplate.Domain.Abstractions;
 using DddTemplate.Domain.Users;
 using DddTemplate.Domain.Users.ValueObjects;
+using DddTemplate.Application.OperationLogs;
 using Microsoft.Extensions.Logging;
 
 namespace DddTemplate.Application.Users;
@@ -16,11 +17,16 @@ namespace DddTemplate.Application.Users;
 public sealed class UserService
 {
     private readonly IUserRepository _repository;
+    private readonly OperationLogService _operationLogService;
     private readonly ILogger<UserService> _logger;
 
-    public UserService(IUserRepository repository, ILogger<UserService> logger)
+    public UserService(
+        IUserRepository repository,
+        OperationLogService operationLogService,
+        ILogger<UserService> logger)
     {
         _repository = repository;
+        _operationLogService = operationLogService;
         _logger = logger;
     }
 

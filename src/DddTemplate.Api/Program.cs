@@ -1,5 +1,7 @@
 using DddTemplate.Application;
 using DddTemplate.Application.TodoItems;
+using DddTemplate.Application.OperationLogs;
+using DddTemplate.Application.Menus;
 using DddTemplate.Infrastructure.InMemory;
 using DddTemplate.Api.Middleware;
 using Serilog;
@@ -44,7 +46,7 @@ try
     {
         options.AddPolicy("AllowAdmin", policy =>
         {
-            policy.WithOrigins("http://localhost:5000", "https://localhost:5001")
+            policy.WithOrigins("http://localhost:5000", "https://localhost:5000")
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
@@ -72,7 +74,11 @@ try
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    app.UseHttpsRedirection();
+    // 仅在生产环境启用 HTTPS 重定向
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
 
     // 启用 CORS
     app.UseCors("AllowAdmin");
@@ -155,7 +161,44 @@ try
     .WithName("RenameTodo")
     .WithTags("Todos");
 
-    // 5. 映射Controllers
+    // 操作日志端点
+    app.MapGet("/api/operation-logs", async (OperationLogService service, ILogger<Program> logger, CancellationToken ct) =>
+    {
+        logger.LogInformation("Fetching all operation logs");
+        var result = await service.ListAsync(ct);
+        logger.LogInformation("Retrieved {Count} operation logs", result.Count);
+        return Results.Ok(result);
+    })
+    .WithName("GetOperationLogs")
+    .WithTags("OperationLogs");
+
+    app.MapGet("/api/operation-logs/{id:guid}", async (Guid id, OperationLogService service, ILogger<Program> logger, CancellationToken ct) =>
+    {
+        logger.LogInformation("Fetching operation log with ID: {LogId}", id);
+        var log = await service.GetAsync(id, ct);
+
+        if (log is null)
+        {
+            logger.LogWarning("Operation log with ID {LogId} not found", id);
+            return Results.NotFound();
+        }
+
+        return Results.Ok(log);
+    })
+    .WithName("GetOperationLogById")
+    .WithTags("OperationLogs");
+
+    app.MapPost("/api/operation-logs", async (CreateOperationLogRequest request, OperationLogService service, ILogger<Program> logger, CancellationToken ct) =>
+    {
+        logger.LogInformation("Creating operation log for user: {UserName}", request.UserName);
+        var created = await service.CreateAsync(request, ct);
+        logger.LogInformation("Created operation log with ID: {LogId}", created.Id);
+        return Results.Created($"/api/operation-logs/{created.Id}", created);
+    })
+    .WithName("CreateOperationLog")
+    .WithTags("OperationLogs");
+
+    // 5. 映射Controllers（包含菜单管理端点）
     app.MapControllers();
 
     Log.Information("========================================");

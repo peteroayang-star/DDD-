@@ -3,7 +3,8 @@
     ViewData["Title"] = "仪表盘";
 }
 
-<div id="dashboardApp">
+<!-- 仪表盘页面 -->
+<div>
     <el-row :gutter="20">
         <el-col :span="6">
             <el-card shadow="hover">
@@ -61,9 +62,10 @@
                 <div slot="header">
                     <span style="font-weight: bold;">快速操作</span>
                 </div>
-                <el-button type="primary" icon="el-icon-plus" @@click="goToCreate">新增待办</el-button>
-                <el-button type="success" icon="el-icon-tickets" @@click="goToTodoList">待办列表</el-button>
-                <el-button type="info" icon="el-icon-refresh" @@click="refreshData">刷新数据</el-button>
+                <!-- 快速操作按钮 -->
+                <el-button type="primary" icon="el-icon-plus" onclick="window.location.href='/TodoItem/Create'">新增待办</el-button>
+                <el-button type="success" icon="el-icon-tickets" onclick="window.location.href='/TodoItem'">待办列表</el-button>
+                <el-button type="info" icon="el-icon-refresh" onclick="location.reload()">刷新数据</el-button>
             </el-card>
         </el-col>
         
@@ -82,20 +84,3 @@
         </el-col>
     </el-row>
 </div>
-
-<script>
-new Vue({
-    el: '#dashboardApp',
-    methods: {
-        goToCreate() {
-            window.location.href = '/TodoItem/Create';
-        },
-        goToTodoList() {
-            window.location.href = '/TodoItem';
-        },
-        refreshData() {
-            location.reload();
-        }
-    }
-});
-</script>

@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace DddTemplate.Application.TodoItems;
 
-public sealed record CreateTodoItemRequest(string Title);
+public sealed record CreateTodoItemRequest(string Title, string? Description = null);
 

@@ -1,0 +1,137 @@
+@model List<DddTemplate.Admin.Models.MenuDto>
+@{
+    ViewData["Title"] = "菜单管理";
+}
+
+<el-card>
+    <div slot="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 18px; font-weight: bold;">菜单管理 (共 {{ menuList.length }} 条)</span>
+        <el-button type="primary" size="small" icon="el-icon-plus" @@click="openMenuDialog(null)">
+            新增菜单
+        </el-button>
+    </div>
+
+    <!-- 调试信息 -->
+    <el-alert v-if="menuList.length === 0" title="暂无菜单数据" type="info" :closable="false" style="margin-bottom: 15px;">
+        请点击"新增菜单"按钮添加菜单
+    </el-alert>
+
+    <el-table :data="menuList" style="width: 100%" border stripe v-loading="!menuList">
+        <el-table-column label="菜单名称" min-width="150">
+            <template slot-scope="scope">
+                <span style="font-weight: 500;">{{ scope.row.Name }}</span>
+            </template>
+        </el-table-column>
+        <el-table-column label="图标" width="120" align="center">
+            <template slot-scope="scope">
+                <div v-if="scope.row.Icon" style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <i :class="scope.row.Icon" style="font-size: 24px; color: #409EFF;"></i>
+                    <span style="font-size: 11px; color: #909399;">{{ scope.row.Icon.replace('el-icon-', '') }}</span>
+                </div>
+                <span v-else style="color: #C0C4CC;">未设置</span>
+            </template>
+        </el-table-column>
+        <el-table-column label="路径" min-width="150">
+            <template slot-scope="scope">
+                <el-tag v-if="scope.row.Path" size="small" type="info">{{ scope.row.Path }}</el-tag>
+                <span v-else style="color: #C0C4CC;">-</span>
+            </template>
+        </el-table-column>
+        <el-table-column prop="SortOrder" label="排序" width="80" align="center"></el-table-column>
+        <el-table-column label="状态" width="80" align="center">
+            <template slot-scope="scope">
+                <el-tag :type="scope.row.IsEnabled ? 'success' : 'danger'" size="small">
+                    {{ scope.row.IsEnabled ? '启用' : '禁用' }}
+                </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="创建时间" width="180">
+            <template slot-scope="scope">
+                {{ formatDate(scope.row.CreatedAt) }}
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" align="center" fixed="right">
+            <template slot-scope="scope">
+                <el-button size="mini" type="primary" icon="el-icon-edit" @@click="openMenuDialog(scope.row)">编辑</el-button>
+                <el-button size="mini" type="danger" icon="el-icon-delete" @@click="deleteMenuConfirm(scope.row.Id)">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+</el-card>
+
+<el-dialog :title="menuDialogTitle" :visible.sync="menuDialogVisible" width="600px" @@close="closeMenuDialog">
+    <el-form :model="menuForm" :rules="menuRules" ref="menuFormRef" label-width="100px">
+        <el-form-item label="菜单名称" prop="name">
+            <el-input v-model="menuForm.name" placeholder="请输入菜单名称"></el-input>
+        </el-form-item>
+        <el-form-item label="图标" prop="icon">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <el-input v-model="menuForm.icon" placeholder="点击右侧按钮选择图标" readonly style="flex: 1;">
+                    <template slot="prepend">
+                        <i :class="menuForm.icon || 'el-icon-question'" style="font-size: 18px;"></i>
+                    </template>
+                </el-input>
+                <el-button @@click="showIconPicker = true" icon="el-icon-search">选择图标</el-button>
+            </div>
+        </el-form-item>
+        <el-form-item label="路径" prop="path">
+            <el-input v-model="menuForm.path" placeholder="请输入路径，如: /dashboard"></el-input>
+        </el-form-item>
+        <el-form-item label="排序" prop="sortOrder">
+            <el-input-number v-model="menuForm.sortOrder" :min="0" :max="999"></el-input-number>
+        </el-form-item>
+    </el-form>
+    <div slot="footer">
+        <el-button @@click="closeMenuDialog">取消</el-button>
+        <el-button type="primary" @@click="submitMenuForm" :loading="menuSubmitting">确定</el-button>
+    </div>
+</el-dialog>
+
+<!-- 图标选择器对话框 -->
+<el-dialog title="选择图标" :visible.sync="showIconPicker" width="800px" append-to-body>
+    <div style="margin-bottom: 15px;">
+        <el-input v-model="iconSearchText" placeholder="搜索图标..." prefix-icon="el-icon-search" clearable></el-input>
+    </div>
+    <div style="max-height: 400px; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+            <div v-for="icon in filteredIcons" :key="icon"
+                 @@click="selectIcon(icon)"
+                 style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px; cursor: pointer; transition: all 0.3s;"
+                 :style="{ 'background-color': menuForm.icon === icon ? '#ecf5ff' : '', 'border-color': menuForm.icon === icon ? '#409EFF' : '' }"
+                 @@mouseenter="$event.currentTarget.style.borderColor = '#409EFF'"
+                 @@mouseleave="$event.currentTarget.style.borderColor = menuForm.icon === icon ? '#409EFF' : '#dcdfe6'">
+                <i :class="icon" style="font-size: 24px; margin-bottom: 8px;"></i>
+                <span style="font-size: 12px; color: #606266; text-align: center; word-break: break-all;">{{ icon.replace('el-icon-', '') }}</span>
+            </div>
+        </div>
+    </div>
+    <div slot="footer">
+        <el-button @@click="showIconPicker = false">取消</el-button>
+        <el-button type="primary" @@click="confirmIconSelection">确定</el-button>
+    </div>
+</el-dialog>
+
+@section Scripts {
+<script>
+    // 初始化菜单数据到父 Vue 实例
+    var menuData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+    console.log('原始菜单数据:', menuData);
+    console.log('数据类型:', typeof menuData);
+    console.log('数据长度:', menuData ? menuData.length : 'null');
+
+    // 立即尝试初始化
+    (function initMenuData() {
+        var appElement = document.getElementById('app');
+        if (appElement && appElement.__vue__) {
+            var app = appElement.__vue__;
+            app.menuList = menuData || [];
+            console.log('✓ 菜单数据已加载到 Vue 实例:', app.menuList);
+            console.log('✓ Vue 实例中的 menuList 长度:', app.menuList.length);
+        } else {
+            console.log('Vue 实例未就绪，200ms 后重试...');
+            setTimeout(initMenuData, 200);
+        }
+    })();
+</script>
+}

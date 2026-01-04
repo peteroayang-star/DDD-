@@ -19,10 +19,11 @@ public sealed class TodoItem : AggregateRoot<Guid>
         Title = string.Empty; // for serialization
     }
 
-    private TodoItem(Guid id, string title)
+    private TodoItem(Guid id, string title, string? description = null)
         : base(id)
     {
         Title = title;
+        Description = description;
         IsCompleted = false;
         CreatedAt = DateTime.UtcNow;
     }
@@ -31,13 +32,18 @@ public sealed class TodoItem : AggregateRoot<Guid>
     /// 创建新的 TodoItem
     /// </summary>
     /// <param name="title">标题</param>
+    /// <param name="description">描述（可选）</param>
     /// <returns>TodoItem 实例</returns>
-    public static TodoItem Create(string title)
+    public static TodoItem Create(string title, string? description = null)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Title cannot be empty.", nameof(title));
 
-        var todoItem = new TodoItem(Guid.NewGuid(), title.Trim());
+        var trimmedDescription = description?.Trim();
+        var todoItem = new TodoItem(
+            Guid.NewGuid(),
+            title.Trim(),
+            string.IsNullOrEmpty(trimmedDescription) ? null : trimmedDescription);
 
         // 触发领域事件
         todoItem.AddDomainEvent(new TodoItemCreatedEvent(todoItem.Id, todoItem.Title));
@@ -80,7 +86,8 @@ public sealed class TodoItem : AggregateRoot<Guid>
     /// <param name="description">新描述</param>
     public void UpdateDescription(string? description)
     {
-        Description = description?.Trim();
+        var trimmed = description?.Trim();
+        Description = string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 }
 

@@ -95,11 +95,11 @@
                             <i class="el-icon-setting"></i>
                             <span>系统管理</span>
                         </template>
-                        <el-menu-item index="menu">
+                        <el-menu-item index="menu" @@click="navigate('/Menu')">
                             <i class="el-icon-menu"></i>
                             <span>菜单管理</span>
                         </el-menu-item>
-                        <el-menu-item index="log">
+                        <el-menu-item index="log" @@click="navigate('/OperationLog')">
                             <i class="el-icon-document-copy"></i>
                             <span>操作日志</span>
                         </el-menu-item>
@@ -150,7 +150,67 @@
             data() {
                 return {
                     isCollapse: false,
-                    activeMenu: 'todoitem'
+                    activeMenu: 'todoitem',
+                    // 待办列表相关数据
+                    items: [],
+                    dialogVisible: false,
+                    dialogTitle: '',
+                    isEdit: false,
+                    currentId: null,
+                    submitting: false,
+                    form: { title: '', description: '' },
+                    rules: {
+                        title: [
+                            { required: true, message: '请输入待办事项标题', trigger: 'blur' },
+                            { min: 1, max: 100, message: '标题长度在 1 到 100 个字符', trigger: 'blur' }
+                        ]
+                    },
+                    // 操作日志相关数据
+                    logs: [],
+                    searchText: '',
+                    filterModule: '',
+                    filterOperationType: '',
+                    filterStatus: '',
+                    // 菜单管理相关数据
+                    menus: [],
+                    menuList: [],
+                    menuDialogVisible: false,
+                    menuDialogTitle: '',
+                    menuIsEdit: false,
+                    menuCurrentId: null,
+                    menuSubmitting: false,
+                    menuForm: { name: '', icon: '', path: '', sortOrder: 0 },
+                    menuRules: {
+                        name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }]
+                    },
+                    // 图标选择器相关数据
+                    showIconPicker: false,
+                    iconSearchText: '',
+                    availableIcons: [
+                        'el-icon-s-home', 'el-icon-menu', 'el-icon-s-order', 'el-icon-s-platform',
+                        'el-icon-s-fold', 'el-icon-s-unfold', 'el-icon-s-operation', 'el-icon-s-promotion',
+                        'el-icon-s-data', 'el-icon-s-check', 'el-icon-s-marketing', 'el-icon-s-flag',
+                        'el-icon-s-comment', 'el-icon-s-finance', 'el-icon-s-claim', 'el-icon-s-custom',
+                        'el-icon-s-opportunity', 'el-icon-s-goods', 'el-icon-s-shop', 'el-icon-s-open',
+                        'el-icon-s-management', 'el-icon-s-ticket', 'el-icon-s-release', 'el-icon-s-cooperation',
+                        'el-icon-s-tools', 'el-icon-s-help', 'el-icon-s-grid', 'el-icon-setting',
+                        'el-icon-user', 'el-icon-user-solid', 'el-icon-phone', 'el-icon-phone-outline',
+                        'el-icon-more', 'el-icon-more-outline', 'el-icon-star-on', 'el-icon-star-off',
+                        'el-icon-location', 'el-icon-location-outline', 'el-icon-picture', 'el-icon-picture-outline',
+                        'el-icon-delete', 'el-icon-search', 'el-icon-edit', 'el-icon-edit-outline',
+                        'el-icon-check', 'el-icon-close', 'el-icon-plus', 'el-icon-minus',
+                        'el-icon-circle-plus', 'el-icon-circle-plus-outline', 'el-icon-circle-check', 'el-icon-circle-close',
+                        'el-icon-upload', 'el-icon-download', 'el-icon-share', 'el-icon-refresh',
+                        'el-icon-document', 'el-icon-document-add', 'el-icon-document-delete', 'el-icon-document-copy',
+                        'el-icon-folder', 'el-icon-folder-add', 'el-icon-folder-delete', 'el-icon-folder-opened',
+                        'el-icon-tickets', 'el-icon-files', 'el-icon-notebook-1', 'el-icon-notebook-2',
+                        'el-icon-date', 'el-icon-time', 'el-icon-view', 'el-icon-message',
+                        'el-icon-chat-line-square', 'el-icon-chat-dot-square', 'el-icon-chat-round', 'el-icon-chat-line-round',
+                        'el-icon-bell', 'el-icon-service', 'el-icon-warning', 'el-icon-warning-outline',
+                        'el-icon-question', 'el-icon-info', 'el-icon-remove', 'el-icon-zoom-in',
+                        'el-icon-zoom-out', 'el-icon-rank', 'el-icon-sort', 'el-icon-sort-up',
+                        'el-icon-sort-down', 'el-icon-tickets', 'el-icon-document-checked', 'el-icon-sold-out'
+                    ]
                 };
             },
             methods: {
@@ -159,6 +219,133 @@
                 },
                 navigate(path) {
                     window.location.href = path;
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '-';
+                    try {
+                        var date = new Date(dateStr);
+                        if (isNaN(date.getTime())) return '-';
+                        return date.toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    } catch (e) {
+                        return '-';
+                    }
+                },
+                openCreateDialog() {
+                    this.dialogTitle = '新增待办事项';
+                    this.isEdit = false;
+                    this.currentId = null;
+                    this.form = { title: '', description: '' };
+                    this.dialogVisible = true;
+                },
+                openEditDialog(row) {
+                    this.dialogTitle = '编辑待办事项';
+                    this.isEdit = true;
+                    this.currentId = row.id;
+                    this.form = { title: row.title, description: row.description || '' };
+                    this.dialogVisible = true;
+                },
+                closeDialog() {
+                    // 关闭对话框
+                    this.dialogVisible = false;
+                    // 重置表单验证状态
+                    if (this.$refs.todoForm) {
+                        this.$refs.todoForm.resetFields();
+                    }
+                    // 重置表单数据
+                    this.form = { title: '', description: '' };
+                    // 重置编辑状态
+                    this.isEdit = false;
+                    this.currentId = null;
+                    this.dialogTitle = '';
+                },
+                submitForm() {
+                    var self = this;
+                    this.$refs.todoForm.validate(function(valid) {
+                        if (valid) {
+                            self.submitting = true;
+                            var url = self.isEdit ? '/api/todoitems/' + self.currentId : '/api/todoitems';
+                            var method = self.isEdit ? 'PUT' : 'POST';
+
+                            fetch(url, {
+                                method: method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(self.form)
+                            })
+                            .then(function(response) {
+                                self.submitting = false;
+                                if (response.ok) {
+                                    self.$message.success(self.isEdit ? '更新成功' : '创建成功');
+                                    self.dialogVisible = false;
+                                    setTimeout(function() { location.reload(); }, 500);
+                                } else {
+                                    response.text().then(function(text) {
+                                        console.error('API Error:', text);
+                                        self.$message.error(self.isEdit ? '更新失败' : '创建失败');
+                                    });
+                                }
+                            })
+                            .catch(function(error) {
+                                self.submitting = false;
+                                console.error('Network Error:', error);
+                                self.$message.error('网络错误');
+                            });
+                        } else {
+                            self.$message.error('请检查表单输入');
+                        }
+                    });
+                },
+                completeItem(id) {
+                    var self = this;
+                    this.$confirm('确定要标记为完成吗?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'info'
+                    }).then(function() {
+                        fetch('/api/todoitems/' + id + '/complete', { method: 'POST' })
+                            .then(function(response) {
+                                if (response.ok) {
+                                    self.$message.success('标记完成成功');
+                                    setTimeout(function() { location.reload(); }, 500);
+                                } else {
+                                    response.text().then(function(text) {
+                                        console.error('Complete API Error:', text);
+                                        self.$message.error('操作失败');
+                                    });
+                                }
+                            })
+                            .catch(function(error) {
+                                console.error('Complete Network Error:', error);
+                                self.$message.error('网络错误');
+                            });
+                    }).catch(function() {});
+                },
+                deleteItem(id) {
+                    var self = this;
+                    this.$confirm('确定要删除这条记录吗? 此操作不可恢复!', '警告', {
+                        confirmButtonText: '确定删除',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function() {
+                        fetch('/TodoItem/Delete/' + id, { method: 'POST' })
+                            .then(function(response) {
+                                if (response.ok) {
+                                    self.$message.success('删除成功');
+                                    setTimeout(function() { location.reload(); }, 500);
+                                } else {
+                                    self.$message.error('删除失败');
+                                }
+                            })
+                            .catch(function() {
+                                self.$message.error('网络错误');
+                            });
+                    }).catch(function() {});
                 },
                 handleCommand(command) {
                     if (command === 'logout') {
@@ -172,14 +359,168 @@
                     } else if (command === 'profile') {
                         this.$message('个人中心功能开发中...');
                     }
+                },
+                // 操作日志相关方法
+                refreshData() {
+                    location.reload();
+                },
+                viewDetails(id) {
+                    window.location.href = '/OperationLog/Details/' + id;
+                },
+                getOperationTypeColor(type) {
+                    const colorMap = {
+                        'Create': 'success',
+                        'Update': 'primary',
+                        'Delete': 'danger',
+                        'Query': 'info'
+                    };
+                    return colorMap[type] || 'info';
+                },
+                // 菜单管理相关方法
+                openMenuDialog(row) {
+                    if (row) {
+                        this.menuDialogTitle = '编辑菜单';
+                        this.menuIsEdit = true;
+                        this.menuCurrentId = row.Id;
+                        this.menuForm = {
+                            name: row.Name,
+                            icon: row.Icon || '',
+                            path: row.Path || '',
+                            sortOrder: row.SortOrder
+                        };
+                    } else {
+                        this.menuDialogTitle = '新增菜单';
+                        this.menuIsEdit = false;
+                        this.menuCurrentId = null;
+                        this.menuForm = { name: '', icon: '', path: '', sortOrder: 0 };
+                    }
+                    this.menuDialogVisible = true;
+                },
+                closeMenuDialog() {
+                    this.menuDialogVisible = false;
+                    if (this.$refs.menuFormRef) {
+                        this.$refs.menuFormRef.resetFields();
+                    }
+                },
+                submitMenuForm() {
+                    var self = this;
+                    this.$refs.menuFormRef.validate(function(valid) {
+                        if (valid) {
+                            self.menuSubmitting = true;
+                            var url = self.menuIsEdit ? '/Menu/Edit/' + self.menuCurrentId : '/Menu/Create';
+                            var formData = new FormData();
+                            formData.append('Name', self.menuForm.name);
+                            formData.append('Icon', self.menuForm.icon || '');
+                            formData.append('Path', self.menuForm.path || '');
+                            formData.append('SortOrder', self.menuForm.sortOrder);
+                            if (self.menuIsEdit) {
+                                formData.append('Id', self.menuCurrentId);
+                            }
+
+                            fetch(url, {
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(function(response) {
+                                self.menuSubmitting = false;
+                                if (response.ok) {
+                                    self.$message.success(self.menuIsEdit ? '更新成功' : '创建成功');
+                                    self.menuDialogVisible = false;
+                                    setTimeout(function() { location.reload(); }, 500);
+                                } else {
+                                    self.$message.error(self.menuIsEdit ? '更新失败' : '创建失败');
+                                }
+                            })
+                            .catch(function(error) {
+                                self.menuSubmitting = false;
+                                self.$message.error('网络错误');
+                            });
+                        }
+                    });
+                },
+                deleteMenuConfirm(id) {
+                    var self = this;
+                    this.$confirm('确定要删除这个菜单吗?', '警告', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function() {
+                        fetch('/Menu/Delete/' + id, { method: 'POST' })
+                            .then(function(response) {
+                                if (response.ok) {
+                                    self.$message.success('删除成功');
+                                    setTimeout(function() { location.reload(); }, 500);
+                                } else {
+                                    self.$message.error('删除失败');
+                                }
+                            })
+                            .catch(function() {
+                                self.$message.error('网络错误');
+                            });
+                    }).catch(function() {});
+                },
+                // 图标选择器相关方法
+                selectIcon(icon) {
+                    this.menuForm.icon = icon;
+                },
+                confirmIconSelection() {
+                    this.showIconPicker = false;
+                    this.iconSearchText = '';
+                }
+            },
+            computed: {
+                filteredLogs() {
+                    let result = this.logs;
+
+                    // 搜索文本筛选
+                    if (this.searchText) {
+                        const search = this.searchText.toLowerCase();
+                        result = result.filter(log =>
+                            (log.userName && log.userName.toLowerCase().includes(search)) ||
+                            (log.module && log.module.toLowerCase().includes(search)) ||
+                            (log.description && log.description.toLowerCase().includes(search))
+                        );
+                    }
+
+                    // 模块筛选
+                    if (this.filterModule) {
+                        result = result.filter(log => log.module === this.filterModule);
+                    }
+
+                    // 操作类型筛选
+                    if (this.filterOperationType) {
+                        result = result.filter(log => log.operationType === this.filterOperationType);
+                    }
+
+                    // 状态筛选
+                    if (this.filterStatus === 'success') {
+                        result = result.filter(log => log.isSuccess === true);
+                    } else if (this.filterStatus === 'failed') {
+                        result = result.filter(log => log.isSuccess === false);
+                    }
+
+                    return result;
+                },
+                filteredIcons() {
+                    if (!this.iconSearchText) {
+                        return this.availableIcons;
+                    }
+                    const search = this.iconSearchText.toLowerCase();
+                    return this.availableIcons.filter(icon =>
+                        icon.toLowerCase().includes(search)
+                    );
                 }
             },
             mounted() {
                 const path = window.location.pathname;
                 if (path.includes('TodoItem')) this.activeMenu = 'todoitem';
                 else if (path.includes('Dashboard')) this.activeMenu = 'dashboard';
+                else if (path.includes('OperationLog')) this.activeMenu = 'log';
+                else if (path.includes('Menu')) this.activeMenu = 'menu';
             }
         });
     </script>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
