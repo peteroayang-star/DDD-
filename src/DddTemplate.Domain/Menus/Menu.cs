@@ -1,4 +1,5 @@
 using DddTemplate.Domain.Abstractions;
+using DddTemplate.Domain.Menus.Events;
 
 namespace DddTemplate.Domain.Menus;
 
@@ -68,7 +69,9 @@ public sealed class Menu : AggregateRoot<Guid>
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Menu name cannot be empty.", nameof(name));
 
-        return new Menu(Guid.NewGuid(), name.Trim(), icon?.Trim(), path?.Trim(), parentId, sortOrder);
+        var menu = new Menu(Guid.NewGuid(), name.Trim(), icon?.Trim(), path?.Trim(), parentId, sortOrder);
+        menu.AddDomainEvent(new MenuCreatedEvent(menu.Id, menu.Name));
+        return menu;
     }
 
     /// <summary>
@@ -99,6 +102,8 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </summary>
     public void Disable()
     {
+        if (!IsEnabled) return;
         IsEnabled = false;
+        AddDomainEvent(new MenuDisabledEvent(Id));
     }
 }
