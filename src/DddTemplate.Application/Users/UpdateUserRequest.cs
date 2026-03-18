@@ -5,5 +5,6 @@ namespace DddTemplate.Application.Users;
 /// </summary>
 public sealed record UpdateUserRequest(
     string? Email,
-    string? FullName
+    string? FullName,
+    string? PhoneNumber
 );

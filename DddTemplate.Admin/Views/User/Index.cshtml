@@ -3,48 +3,97 @@
     ViewData["Title"] = "用户管理";
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>用户管理</h2>
-        <a href="@Url.Action("Create")" class="btn btn-primary">新增用户</a>
-    </div>
-
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>邮箱</th>
-                        <th>姓名</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in Model)
-                    {
-                        <tr>
-                            <td>@user.Email</td>
-                            <td>@user.FullName</td>
-                            <td>
-                                @if (user.IsActive)
-                                {
-                                    <span class="badge bg-success">活跃</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">停用</span>
-                                }
-                            </td>
-                            <td>@user.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                            <td>
-                                <button class="btn btn-sm btn-info">详情</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+<div>
+    <el-card>
+        <div slot="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <el-button size="small" icon="el-icon-back" @@click="navigate('/Dashboard')">返回</el-button>
+                <span style="font-size: 18px; font-weight: bold;">用户管理</span>
+            </div>
+            <el-button type="primary" size="small" @@click="openUserDialog">
+                <i class="el-icon-plus"></i> 新增用户
+            </el-button>
         </div>
-    </div>
+
+        <el-table :data="users" stripe style="width: 100%">
+            <el-table-column label="邮箱" prop="email" width="200"></el-table-column>
+            <el-table-column label="姓名" prop="fullName" width="150"></el-table-column>
+            <el-table-column label="手机号" prop="phoneNumber" width="150"></el-table-column>
+            <el-table-column label="状态" width="100">
+                <template slot-scope="scope">
+                    <el-tag :type="scope.row.isActive ? 'success' : 'info'" size="small">
+                        {{ scope.row.isActive ? '活跃' : '停用' }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column label="创建时间" width="180">
+                <template slot-scope="scope">
+                    {{ formatDate(scope.row.createdAt) }}
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" width="200">
+                <template slot-scope="scope">
+                    <el-button size="mini" type="primary" @@click="editUser(scope.row)">
+                        <i class="el-icon-edit"></i> 编辑
+                    </el-button>
+                    <el-button size="mini" type="danger" @@click="deleteUser(scope.row.id)">
+                        <i class="el-icon-delete"></i> 删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-card>
+
+    <!-- 新增/编辑用户弹出框 -->
+    <el-dialog :title="userDialogTitle" :visible.sync="userDialogVisible" width="600px">
+        <el-form :model="userForm" :rules="userRules" ref="userForm" label-width="100px">
+            <el-form-item label="邮箱" prop="email">
+                <el-input v-model="userForm.email" placeholder="请输入邮箱" :disabled="userIsEdit"></el-input>
+            </el-form-item>
+            <el-form-item label="姓名" prop="fullName">
+                <el-input v-model="userForm.fullName" placeholder="请输入姓名"></el-input>
+            </el-form-item>
+            <el-form-item label="手机号" prop="phoneNumber">
+                <el-input v-model="userForm.phoneNumber" placeholder="请输入手机号"></el-input>
+            </el-form-item>
+            <el-form-item label="密码" prop="password" v-if="!userIsEdit">
+                <el-input v-model="userForm.password" type="password" placeholder="请输入密码"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer">
+            <el-button @@click="userDialogVisible = false">取消</el-button>
+            <el-button type="primary" @@click="submitUser" :loading="userSubmitting">确定</el-button>
+        </span>
+    </el-dialog>
 </div>
+
+@section Scripts {
+<script>
+(function() {
+    var modelData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initData);
+    } else {
+        initData();
+    }
+
+    function initData() {
+        Vue.nextTick(function() {
+            var app = document.querySelector('#app').__vue__;
+            var users = (modelData || []).map(function(item) {
+                return {
+                    id: item.id || item.Id,
+                    email: item.email || item.Email,
+                    fullName: item.fullName || item.FullName,
+                    phoneNumber: item.phoneNumber || item.PhoneNumber,
+                    isActive: item.isActive !== undefined ? item.isActive : item.IsActive,
+                    createdAt: item.createdAt || item.CreatedAt
+                };
+            });
+            app.users = users;
+        });
+    }
+})();
+</script>
+}

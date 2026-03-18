@@ -10,29 +10,26 @@ public class UserController : Controller
     public UserController(IHttpClientFactory httpClientFactory)
     {
         _httpClient = httpClientFactory.CreateClient();
-        _httpClient.BaseAddress = new Uri("http://localhost:5001");
+        _httpClient.BaseAddress = new Uri("http://localhost:5000");
     }
 
     public async Task<IActionResult> Index()
     {
-        var users = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/users") ?? new();
+        var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<UserDto>>>("api/users");
+        var users = response?.Data ?? new();
         return View(users);
     }
 
-    public IActionResult Create()
-    {
-        return View();
-    }
-
     [HttpPost]
-    public async Task<IActionResult> Create(CreateUserRequest request)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/register", request);
-        if (response.IsSuccessStatusCode)
-        {
-            return RedirectToAction(nameof(Index));
-        }
-        ModelState.AddModelError("", "创建用户失败");
-        return View(request);
+        await _httpClient.DeleteAsync($"api/users/{id}");
+        return RedirectToAction(nameof(Index));
     }
+}
+
+public class ApiResponse<T>
+{
+    public bool Success { get; set; }
+    public T? Data { get; set; }
 }

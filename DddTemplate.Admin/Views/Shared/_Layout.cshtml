@@ -79,11 +79,11 @@
                             <i class="el-icon-user"></i>
                             <span>用户管理</span>
                         </template>
-                        <el-menu-item index="userlist">
+                        <el-menu-item index="userlist" @@click="navigate('/User')">
                             <i class="el-icon-user-solid"></i>
                             <span>用户列表</span>
                         </el-menu-item>
-                        <el-menu-item index="role">
+                        <el-menu-item index="role" @@click="navigate('/Role')">
                             <i class="el-icon-s-custom"></i>
                             <span>角色管理</span>
                         </el-menu-item>
@@ -164,6 +164,26 @@
                             { required: true, message: '请输入待办事项标题', trigger: 'blur' },
                             { min: 1, max: 100, message: '标题长度在 1 到 100 个字符', trigger: 'blur' }
                         ]
+                    },
+                    // 用户管理相关数据
+                    users: [],
+                    userDialogVisible: false,
+                    userDialogTitle: '新增用户',
+                    userIsEdit: false,
+                    userCurrentId: null,
+                    userSubmitting: false,
+                    userForm: { email: '', fullName: '', phoneNumber: '', password: '' },
+                    userRules: {
+                        email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
+                        fullName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+                        password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+                    },
+                    roles: [],
+                    roleDialogVisible: false,
+                    roleSubmitting: false,
+                    roleForm: { name: '', description: '' },
+                    roleRules: {
+                        name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }]
                     },
                     // 操作日志相关数据
                     logs: [],
@@ -347,6 +367,98 @@
                             });
                     }).catch(function() {});
                 },
+                openUserDialog() {
+                    this.userDialogTitle = '新增用户';
+                    this.userIsEdit = false;
+                    this.userCurrentId = null;
+                    this.userDialogVisible = true;
+                    this.userForm = { email: '', fullName: '', phoneNumber: '', password: '' };
+                },
+                editUser(user) {
+                    this.userDialogTitle = '编辑用户';
+                    this.userIsEdit = true;
+                    this.userCurrentId = user.id;
+                    this.userDialogVisible = true;
+                    this.userForm = { email: user.email, fullName: user.fullName, phoneNumber: user.phoneNumber || '', password: '' };
+                },
+                submitUser() {
+                    var self = this;
+                    this.$refs.userForm.validate(function(valid) {
+                        if (valid) {
+                            self.userSubmitting = true;
+                            var url = self.userIsEdit
+                                ? 'http://localhost:5000/api/users/' + self.userCurrentId
+                                : 'http://localhost:5000/api/auth/register';
+                            var method = self.userIsEdit ? 'PUT' : 'POST';
+                            var body = self.userIsEdit
+                                ? { FullName: self.userForm.fullName, PhoneNumber: self.userForm.phoneNumber }
+                                : { Email: self.userForm.email, Password: self.userForm.password, FullName: self.userForm.fullName, PhoneNumber: self.userForm.phoneNumber };
+                            fetch(url, {
+                                method: method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(body)
+                            }).then(function(res) {
+                                return res.json().then(function(data) {
+                                    if (res.ok) {
+                                        self.$message.success(self.userIsEdit ? '更新成功' : '创建成功');
+                                        self.userDialogVisible = false;
+                                        setTimeout(function() { location.reload(); }, 500);
+                                    } else {
+                                        console.error('API Error:', data);
+                                        var errorMsg = data.errors && data.errors.length > 0 ? data.errors[0].message : (self.userIsEdit ? '更新失败' : '创建失败');
+                                        self.$message.error(errorMsg);
+                                    }
+                                });
+                            }).catch(function(err) {
+                                console.error('Network Error:', err);
+                                self.$message.error('网络错误');
+                            }).finally(function() {
+                                self.userSubmitting = false;
+                            });
+                        }
+                    });
+                },
+                deleteUser(id) {
+                    var self = this;
+                    this.$confirm('确定要删除该用户吗?', '警告', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(function() {
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/User/Delete/' + id;
+                        document.body.appendChild(form);
+                        form.submit();
+                    }).catch(function() {});
+                },
+                openRoleDialog() {
+                    this.roleDialogVisible = true;
+                    this.roleForm = { name: '', description: '' };
+                },
+                submitRole() {
+                    var self = this;
+                    this.$refs.roleForm.validate(function(valid) {
+                        if (valid) {
+                            self.roleSubmitting = true;
+                            var form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '/Role/Create';
+                            var nameInput = document.createElement('input');
+                            nameInput.type = 'hidden';
+                            nameInput.name = 'name';
+                            nameInput.value = self.roleForm.name;
+                            var descInput = document.createElement('input');
+                            descInput.type = 'hidden';
+                            descInput.name = 'description';
+                            descInput.value = self.roleForm.description;
+                            form.appendChild(nameInput);
+                            form.appendChild(descInput);
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    });
+                },
                 handleCommand(command) {
                     if (command === 'logout') {
                         this.$confirm('确定要退出登录吗?', '提示', {
@@ -515,6 +627,8 @@
                 const path = window.location.pathname;
                 if (path.includes('TodoItem')) this.activeMenu = 'todoitem';
                 else if (path.includes('Dashboard')) this.activeMenu = 'dashboard';
+                else if (path.includes('User')) this.activeMenu = 'userlist';
+                else if (path.includes('Role')) this.activeMenu = 'role';
                 else if (path.includes('OperationLog')) this.activeMenu = 'log';
                 else if (path.includes('Menu')) this.activeMenu = 'menu';
             }

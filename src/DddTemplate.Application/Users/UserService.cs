@@ -55,7 +55,7 @@ public sealed class UserService
         }
 
         // 创建用户聚合
-        var userResult = User.Create(request.Email, request.FullName);
+        var userResult = User.Create(request.Email, request.FullName, request.PhoneNumber);
         if (userResult.IsFailure)
         {
             _logger.LogWarning("Failed to create user: {Error}", userResult.Error.Message);
@@ -176,6 +176,12 @@ public sealed class UserService
             }
         }
 
+        // 更新手机号
+        if (request.PhoneNumber is not null)
+        {
+            user.UpdatePhoneNumber(request.PhoneNumber);
+        }
+
         _logger.LogInformation("User {UserId} updated successfully", id);
         return Result.Success(ToDto(user));
     }
@@ -254,5 +260,5 @@ public sealed class UserService
     }
 
     private static UserDto ToDto(User user) =>
-        new(user.Id, user.Email.Value, user.FullName, user.IsActive, user.CreatedAt, user.LastLoginAt);
+        new(user.Id, user.Email.Value, user.FullName, user.PhoneNumber, user.IsActive, user.CreatedAt, user.LastLoginAt);
 }

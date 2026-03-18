@@ -16,6 +16,7 @@ public sealed class User : AggregateRoot<Guid>
 {
     public Email Email { get; private set; }
     public string FullName { get; private set; }
+    public string? PhoneNumber { get; private set; }
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
@@ -27,10 +28,11 @@ public sealed class User : AggregateRoot<Guid>
         FullName = string.Empty;
     }
 
-    private User(Guid id, Email email, string fullName) : base(id)
+    private User(Guid id, Email email, string fullName, string? phoneNumber = null) : base(id)
     {
         Email = email;
         FullName = fullName;
+        PhoneNumber = phoneNumber;
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
     }
@@ -38,7 +40,7 @@ public sealed class User : AggregateRoot<Guid>
     /// <summary>
     /// 创建新用户（工厂方法）
     /// </summary>
-    public static Result<User> Create(string email, string fullName)
+    public static Result<User> Create(string email, string fullName, string? phoneNumber = null)
     {
         // 验证全名
         if (string.IsNullOrWhiteSpace(fullName))
@@ -60,7 +62,7 @@ public sealed class User : AggregateRoot<Guid>
             return Result.Failure<User>(emailResult.Error);
         }
 
-        var user = new User(Guid.NewGuid(), emailResult.Value, fullName.Trim());
+        var user = new User(Guid.NewGuid(), emailResult.Value, fullName.Trim(), phoneNumber);
 
         // 发布领域事件
         user.AddDomainEvent(new UserCreatedEvent(user.Id, user.Email.Value, user.FullName));
@@ -113,6 +115,14 @@ public sealed class User : AggregateRoot<Guid>
 
         FullName = newFullName.Trim();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// 更新手机号
+    /// </summary>
+    public void UpdatePhoneNumber(string? phoneNumber)
+    {
+        PhoneNumber = phoneNumber;
     }
 
     /// <summary>

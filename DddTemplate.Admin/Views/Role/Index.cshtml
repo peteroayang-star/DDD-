@@ -1,0 +1,80 @@
+@model List<DddTemplate.Admin.Models.RoleDto>
+@{
+    ViewData["Title"] = "角色管理";
+}
+
+<div>
+    <el-card>
+        <div slot="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <el-button size="small" icon="el-icon-back" @@click="navigate('/Dashboard')">返回</el-button>
+                <span style="font-size: 18px; font-weight: bold;">角色管理</span>
+            </div>
+            <el-button type="primary" size="small" @@click="openRoleDialog">
+                <i class="el-icon-plus"></i> 新增角色
+            </el-button>
+        </div>
+
+        <el-table :data="roles" stripe style="width: 100%">
+            <el-table-column label="角色名称" prop="name" width="200"></el-table-column>
+            <el-table-column label="描述" prop="description"></el-table-column>
+            <el-table-column label="创建时间" width="180">
+                <template slot-scope="scope">
+                    {{ formatDate(scope.row.createdAt) }}
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150" fixed="right">
+                <template slot-scope="scope">
+                    <el-button size="mini" type="primary">
+                        <i class="el-icon-edit"></i> 编辑
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-card>
+
+    <!-- 新增角色弹出框 -->
+    <el-dialog title="新增角色" :visible.sync="roleDialogVisible" width="600px">
+        <el-form :model="roleForm" :rules="roleRules" ref="roleForm" label-width="100px">
+            <el-form-item label="角色名称" prop="name">
+                <el-input v-model="roleForm.name" placeholder="请输入角色名称"></el-input>
+            </el-form-item>
+            <el-form-item label="描述" prop="description">
+                <el-input type="textarea" v-model="roleForm.description" :rows="3" placeholder="请输入描述"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer">
+            <el-button @@click="roleDialogVisible = false">取消</el-button>
+            <el-button type="primary" @@click="submitRole" :loading="roleSubmitting">确定</el-button>
+        </span>
+    </el-dialog>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var modelData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initData);
+    } else {
+        initData();
+    }
+
+    function initData() {
+        Vue.nextTick(function() {
+            var app = document.querySelector('#app').__vue__;
+            var roles = (modelData || []).map(function(item) {
+                return {
+                    id: item.id || item.Id,
+                    name: item.name || item.Name,
+                    description: item.description || item.Description,
+                    createdAt: item.createdAt || item.CreatedAt
+                };
+            });
+            app.roles = roles;
+        });
+    }
+})();
+</script>
+}
