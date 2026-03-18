@@ -41,6 +41,25 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    // 配置 JWT 认证
+    builder.Services.AddAuthentication("Bearer")
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                    System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "your-secret-key-min-32-chars!!"))
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
     // 添加 CORS 支持
     builder.Services.AddCors(options =>
     {
@@ -82,6 +101,9 @@ try
 
     // 启用 CORS
     app.UseCors("AllowAdmin");
+
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     // 4. 配置 API 端点（直接调用 Application Service）
 
