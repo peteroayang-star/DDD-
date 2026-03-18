@@ -29,7 +29,8 @@
       "Bash(powershell -Command:*)",
       "Bash(powershell -File:*)",
       "Bash(timeout /t 5 /nobreak)",
-      "Bash(del CreateMenuRequest.cs UpdateMenuRequest.cs)"
+      "Bash(del CreateMenuRequest.cs UpdateMenuRequest.cs)",
+      "Bash(dotnet test:*)"
     ],
     "deny": [],
     "ask": []
