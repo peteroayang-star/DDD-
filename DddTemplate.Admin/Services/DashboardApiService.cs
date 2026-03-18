@@ -44,12 +44,12 @@ public class DashboardApiService
 
         return new DashboardStatistics
         {
-            TotalUsers = _userService.GetTotalUsers(),
+            TotalUsers = await _userService.GetTotalUsers(),
             TotalTodoItems = todoItems.Count,
             CompletedTodoItems = todoItems.Count(x => x.IsCompleted),
             PendingTodoItems = todoItems.Count(x => !x.IsCompleted),
-            TodayVisits = _visitService.GetTodayVisits(),
-            SystemMessages = _messageService.GetUnreadCount()
+            TodayVisits = await _visitService.GetTodayVisits(),
+            SystemMessages = await _messageService.GetUnreadCount()
         };
     }
 }

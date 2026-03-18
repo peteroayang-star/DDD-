@@ -1,43 +1,24 @@
 namespace DddTemplate.Admin.Services;
 
-/// <summary>
-/// 用户统计服务
-/// 用于统计和管理用户数据（模拟数据）
-/// </summary>
 public class UserStatisticsService
 {
-    private static readonly HashSet<string> _registeredUsers = new HashSet<string>
-    {
-        // 初始化一些模拟用户
-        "admin",
-        "user1",
-        "user2",
-        "testuser",
-        "demo"
-    };
-    private static readonly object _lock = new object();
+    private readonly HttpClient _httpClient;
 
-    /// <summary>
-    /// 注册新用户
-    /// </summary>
-    /// <param name="username">用户名</param>
-    public void RegisterUser(string username)
+    public UserStatisticsService(HttpClient httpClient)
     {
-        lock (_lock)
-        {
-            _registeredUsers.Add(username);
-        }
+        _httpClient = httpClient;
     }
 
-    /// <summary>
-    /// 获取总用户数
-    /// </summary>
-    /// <returns>用户总数</returns>
-    public int GetTotalUsers()
+    public async Task<int> GetTotalUsers()
     {
-        lock (_lock)
+        try
         {
-            return _registeredUsers.Count;
+            var response = await _httpClient.GetFromJsonAsync<List<object>>("http://localhost:5001/api/users");
+            return response?.Count ?? 0;
+        }
+        catch
+        {
+            return 0;
         }
     }
 }

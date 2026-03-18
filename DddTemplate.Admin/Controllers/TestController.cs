@@ -12,11 +12,10 @@ public class TestController : Controller
         _visitService = visitService;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var todayVisits = _visitService.GetTodayVisits();
-        var totalVisits = _visitService.GetTotalVisits();
-        
-        return Content($"今日访问: {todayVisits}, 总访问: {totalVisits}");
+        var todayVisits = await _visitService.GetTodayVisits();
+
+        return Content($"今日访问: {todayVisits}");
     }
 }

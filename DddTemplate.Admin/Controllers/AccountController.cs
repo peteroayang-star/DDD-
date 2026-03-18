@@ -30,12 +30,6 @@ public class AccountController : Controller
         // 简单验证（实际项目应该调用API验证）
         if (username == "admin" && password == "admin123")
         {
-            // 记录访问次数
-            _visitService.RecordVisit();
-
-            // 记录用户
-            _userService.RegisterUser(username);
-
             // 设置Cookie，2小时过期，滑动过期
             var cookieOptions = new CookieOptions
             {

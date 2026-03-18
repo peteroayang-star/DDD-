@@ -1,62 +1,24 @@
 namespace DddTemplate.Admin.Services;
 
-/// <summary>
-/// 访问统计服务
-/// 用于记录和统计网站访问量
-/// </summary>
 public class VisitStatisticsService
 {
-    private static int _totalVisits = 128; // 初始化一些模拟访问量
-    private static int _todayVisits = 23;  // 今日访问量
-    private static DateTime _lastResetDate = DateTime.Today;
-    private static readonly object _lock = new object();
+    private readonly HttpClient _httpClient;
 
-    /// <summary>
-    /// 记录一次访问
-    /// </summary>
-    public void RecordVisit()
+    public VisitStatisticsService(HttpClient httpClient)
     {
-        lock (_lock)
-        {
-            // 检查是否需要重置今日访问数
-            if (DateTime.Today > _lastResetDate)
-            {
-                _todayVisits = 0;
-                _lastResetDate = DateTime.Today;
-            }
-
-            _totalVisits++;
-            _todayVisits++;
-        }
+        _httpClient = httpClient;
     }
 
-    /// <summary>
-    /// 获取总访问量
-    /// </summary>
-    /// <returns>总访问次数</returns>
-    public int GetTotalVisits()
+    public async Task<int> GetTodayVisits()
     {
-        lock (_lock)
+        try
         {
-            return _totalVisits;
+            var response = await _httpClient.GetFromJsonAsync<List<object>>("http://localhost:5001/api/operation-logs");
+            return response?.Count ?? 0;
         }
-    }
-
-    /// <summary>
-    /// 获取今日访问量
-    /// </summary>
-    /// <returns>今日访问次数</returns>
-    public int GetTodayVisits()
-    {
-        lock (_lock)
+        catch
         {
-            // 检查是否需要重置
-            if (DateTime.Today > _lastResetDate)
-            {
-                _todayVisits = 0;
-                _lastResetDate = DateTime.Today;
-            }
-            return _todayVisits;
+            return 0;
         }
     }
 }
